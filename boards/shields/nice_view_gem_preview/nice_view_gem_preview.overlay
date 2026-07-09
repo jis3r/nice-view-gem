@@ -10,6 +10,6 @@
 };
 
 &kscan {
-    events = <0>;
+    events = <>;
     /delete-property/ exit-after;
 };
