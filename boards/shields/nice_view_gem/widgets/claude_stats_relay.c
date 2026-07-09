@@ -96,13 +96,17 @@ static void relay_latest_report(void) {
     }
 }
 
-static void relay_work_handler(struct k_work *work) { relay_latest_report(); }
+static void relay_work_handler(struct k_work *work) {
+    ARG_UNUSED(work);
+    relay_latest_report();
+}
 K_WORK_DEFINE(relay_work, relay_work_handler);
 
 static void heartbeat_handler(struct k_work *work);
 K_WORK_DELAYABLE_DEFINE(heartbeat_work, heartbeat_handler);
 
 static void heartbeat_handler(struct k_work *work) {
+    ARG_UNUSED(work);
     k_work_submit(&relay_work);
     k_work_reschedule(&heartbeat_work,
                       K_SECONDS(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S));

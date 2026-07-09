@@ -135,7 +135,10 @@ static void redraw(void) {
     draw_footer(&copy);
 }
 
-static void redraw_work_handler(struct k_work *work) { redraw(); }
+static void redraw_work_handler(struct k_work *work) {
+    ARG_UNUSED(work);
+    redraw();
+}
 K_WORK_DEFINE(redraw_work, redraw_work_handler);
 
 static void queue_redraw(void) {
@@ -148,6 +151,7 @@ static void stale_check_handler(struct k_work *work);
 K_WORK_DELAYABLE_DEFINE(stale_check_work, stale_check_handler);
 
 static void stale_check_handler(struct k_work *work) {
+    ARG_UNUSED(work);
     queue_redraw();
     k_work_reschedule(&stale_check_work,
                       K_SECONDS(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S));
