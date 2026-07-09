@@ -79,7 +79,7 @@ static void draw_middle(const struct claude_stats_state *stats) {
     snprintk(session_text, sizeof(session_text), "%u%%", stats->session_remaining);
     snprintk(weekly_text, sizeof(weekly_text), "%u%%", stats->weekly_remaining);
 
-    draw_label(middle_canvas, 0, 0, 62, LV_TEXT_ALIGN_LEFT, "CLAUDE AI");
+    draw_label(middle_canvas, 0, 0, 62, LV_TEXT_ALIGN_LEFT, "CLAUDE");
     if (stats_are_stale(stats)) {
         lv_draw_rect_dsc_t stale_dsc;
         init_rect_dsc(&stale_dsc, LVGL_FOREGROUND);
@@ -98,9 +98,9 @@ static void draw_middle(const struct claude_stats_state *stats) {
     char reset_text[9];
     uint16_t hours = stats->reset_minutes / 60U;
     uint16_t minutes = stats->reset_minutes % 60U;
-    snprintk(reset_text, sizeof(reset_text), "%uh%02um", hours, minutes);
-    draw_label(middle_canvas, 0, 52, 34, LV_TEXT_ALIGN_LEFT, "RESET");
-    draw_label(middle_canvas, 34, 52, 34, LV_TEXT_ALIGN_RIGHT, reset_text);
+    snprintk(reset_text, sizeof(reset_text), "%u:%02u", hours, minutes);
+    draw_label(middle_canvas, 0, 52, 24, LV_TEXT_ALIGN_LEFT, "RST");
+    draw_label(middle_canvas, 24, 52, 44, LV_TEXT_ALIGN_RIGHT, reset_text);
 
     rotate_canvas(middle_canvas, middle_buffer);
 }
