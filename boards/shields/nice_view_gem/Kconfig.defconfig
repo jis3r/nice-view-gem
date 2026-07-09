@@ -43,6 +43,30 @@ config NICE_VIEW_GEM_ANIMATION_MS
     int "Animation length in milliseconds"
     default 960
 
+config NICE_VIEW_GEM_CLAUDE_STATS
+    bool "Show Claude usage stats on the peripheral"
+    default y
+    depends on ZMK_SPLIT
+
+if NICE_VIEW_GEM_CLAUDE_STATS
+
+config NICE_VIEW_GEM_CLAUDE_STATS_STALE_TIMEOUT_S
+    int "Seconds before Claude stats are stale"
+    default 300
+    range 60 3600
+
+config NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S
+    int "Claude stats relay heartbeat in seconds"
+    default 60
+    range 10 300
+
+config NICE_VIEW_GEM_CLAUDE_STATS_MAX_RESET_MINUTES
+    int "Largest accepted Claude session reset countdown"
+    default 1440
+    range 1 10080
+
+endif # NICE_VIEW_GEM_CLAUDE_STATS
+
 config NICE_VIEW_WIDGET_STATUS
     select LV_USE_LABEL
     select LV_USE_IMG

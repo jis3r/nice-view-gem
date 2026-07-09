@@ -19,4 +19,12 @@
     chosen {
         zephyr,display = &nice_view;
     };
+
+    behaviors {
+        cstats: cstats {
+            compatible = "nice-view-gem,behavior-claude-stats";
+            #binding-cells = <2>;
+            label = "cstats";
+        };
+    };
 };

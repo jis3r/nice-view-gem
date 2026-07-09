@@ -1,0 +1,8 @@
+# Copyright (c) 2026
+# SPDX-License-Identifier: MIT
+
+description: Claude usage stats split-relay behavior
+
+compatible: "nice-view-gem,behavior-claude-stats"
+
+include: two_param.yaml

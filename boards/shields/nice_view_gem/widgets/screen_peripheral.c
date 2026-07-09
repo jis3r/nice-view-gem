@@ -15,6 +15,9 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include "animation.h"
 #include "battery.h"
+#if IS_ENABLED(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS)
+#include "claude_stats.h"
+#endif
 #include "output.h"
 #include "screen_peripheral.h"
 
@@ -110,6 +113,10 @@ int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     lv_obj_t *top = lv_canvas_create(widget->obj);
     lv_obj_align(top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_canvas_set_buffer(top, widget->cbuf, BUFFER_SIZE, BUFFER_SIZE, LV_IMG_CF_TRUE_COLOR);
+
+#if IS_ENABLED(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS)
+    claude_stats_init(widget->obj, widget->cbuf2, widget->cbuf3);
+#endif
 
     draw_animation(widget->obj);
 
