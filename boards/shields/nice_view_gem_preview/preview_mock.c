@@ -1,6 +1,8 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 
+#include <lvgl.h>
+
 #include <zmk/battery.h>
 #include <zmk/display.h>
 #include <zmk/events/battery_state_changed.h>
@@ -22,6 +24,10 @@ static void preview_update_handler(struct k_work *work) {
     ARG_UNUSED(work);
 
     if (!zmk_display_is_initialized()) {
+        zmk_display_init();
+    }
+
+    if (!zmk_display_is_initialized()) {
         k_work_reschedule(&preview_update_work, K_MSEC(50));
         return;
     }
@@ -30,6 +36,7 @@ static void preview_update_handler(struct k_work *work) {
     raise_zmk_battery_state_changed((struct zmk_battery_state_changed){.state_of_charge = 95});
     raise_zmk_split_peripheral_status_changed(
         (struct zmk_split_peripheral_status_changed){.connected = true});
+    lv_task_handler();
 }
 
 static int preview_init(void) {
