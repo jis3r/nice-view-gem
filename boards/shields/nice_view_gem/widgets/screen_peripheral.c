@@ -36,13 +36,17 @@ static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
     lv_obj_t *canvas = lv_obj_get_child(widget, 0);
     fill_background(canvas);
+    PREVIEW_TRACE("top background");
 
     // Draw widgets
     draw_output_status(canvas, state);
+    PREVIEW_TRACE("top output");
     draw_battery_status(canvas, state);
+    PREVIEW_TRACE("top battery");
 
     // Rotate for horizontal display
     rotate_canvas(canvas, cbuf);
+    PREVIEW_TRACE("top rotate");
 }
 
 /**
