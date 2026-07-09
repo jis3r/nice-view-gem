@@ -10,6 +10,12 @@
 #include "../assets/custom_fonts.h"
 #include "util.h"
 
+#if IS_ENABLED(CONFIG_NICE_VIEW_GEM_PREVIEW)
+#define PREVIEW_TRACE(stage) printk("nice-view preview: " stage "\n")
+#else
+#define PREVIEW_TRACE(stage)
+#endif
+
 #define CLAUDE_STATS_BAR_HEIGHT 4
 #define CLAUDE_STATS_BAR_WIDTH 68
 #define CLAUDE_STATS_STALE_MARKER_SIZE 3
@@ -65,12 +71,16 @@ static bool stats_are_stale(const struct claude_stats_state *stats) {
 }
 
 static void draw_middle(const struct claude_stats_state *stats) {
+    PREVIEW_TRACE("stats draw");
     fill_background(middle_canvas);
+    PREVIEW_TRACE("stats background");
 
     if (!stats->valid) {
         draw_label(middle_canvas, 0, 0, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, "CLAUDE");
         draw_label(middle_canvas, 0, 13, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, "SYNC");
+        PREVIEW_TRACE("stats sync labels");
         rotate_canvas(middle_canvas, middle_buffer);
+        PREVIEW_TRACE("stats sync rotate");
         return;
     }
 
@@ -142,17 +152,23 @@ static void stale_check_handler(struct k_work *work) {
 }
 
 void claude_stats_init(lv_obj_t *parent, lv_color_t middle_cbuf[]) {
+    PREVIEW_TRACE("stats init");
     middle_buffer = middle_cbuf;
 
     middle_canvas = lv_canvas_create(parent);
+    PREVIEW_TRACE("stats canvas");
     // Stats canvas x=48..115; 50% crystal x=2..36 leaves an 11px gap.
     lv_obj_align(middle_canvas, LV_ALIGN_TOP_RIGHT, BUFFER_OFFSET_MIDDLE, 0);
+    PREVIEW_TRACE("stats align");
     lv_canvas_set_buffer(middle_canvas, middle_buffer, BUFFER_SIZE, BUFFER_SIZE,
                          LV_IMG_CF_TRUE_COLOR);
+    PREVIEW_TRACE("stats buffer");
 
     redraw();
+    PREVIEW_TRACE("stats redraw");
     k_work_reschedule(&stale_check_work,
                       K_SECONDS(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S));
+    PREVIEW_TRACE("stats schedule");
 }
 
 void claude_stats_update_from_relay(uint8_t session_remaining, uint8_t weekly_remaining,
