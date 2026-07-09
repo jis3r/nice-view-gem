@@ -20,8 +20,16 @@ void rotate_canvas(lv_obj_t *canvas, lv_color_t cbuf[]) {
     img.header.h = BUFFER_SIZE;
 
     lv_canvas_fill_bg(canvas, LVGL_BACKGROUND, LV_OPA_COVER);
-    lv_canvas_transform(canvas, &img, 900, LV_IMG_ZOOM_NONE, -1, 0, BUFFER_SIZE / 2,
-                        BUFFER_SIZE / 2, false);
+
+    lv_img_dsc_t *dest = lv_canvas_get_img(canvas);
+    for (int16_t y = 0; y < BUFFER_SIZE; y++) {
+        for (int16_t x = 0; x < BUFFER_SIZE; x++) {
+            lv_color_t color = lv_img_buf_get_px_color(&img, x, y, LVGL_BACKGROUND);
+            lv_img_buf_set_px_color(dest, y, BUFFER_SIZE - 1 - x, color);
+        }
+    }
+
+    lv_obj_invalidate(canvas);
 }
 
 void fill_background(lv_obj_t *canvas) {
