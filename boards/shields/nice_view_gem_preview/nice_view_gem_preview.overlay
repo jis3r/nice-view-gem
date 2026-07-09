@@ -1,0 +1,14 @@
+/ {
+    chosen {
+        zephyr,display = &sdl_dc;
+    };
+};
+
+&sdl_dc {
+    width = <160>;
+    height = <68>;
+};
+
+&kscan {
+    /delete-property/ exit-after;
+};

@@ -1,0 +1,10 @@
+config SHIELD_NICE_VIEW_GEM_PREVIEW
+    def_bool $(shields_list_contains,nice_view_gem_preview)
+
+if SHIELD_NICE_VIEW_GEM_PREVIEW
+
+config NICE_VIEW_GEM_PREVIEW
+    bool
+    default y
+
+endif # SHIELD_NICE_VIEW_GEM_PREVIEW
