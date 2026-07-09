@@ -115,7 +115,7 @@ int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     lv_canvas_set_buffer(top, widget->cbuf, BUFFER_SIZE, BUFFER_SIZE, LV_IMG_CF_TRUE_COLOR);
 
 #if IS_ENABLED(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS)
-    claude_stats_init(widget->obj, widget->cbuf2, widget->cbuf3);
+    claude_stats_init(widget->obj, widget->cbuf2);
 #endif
 
     draw_animation(widget->obj);

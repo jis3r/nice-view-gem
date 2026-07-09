@@ -9,7 +9,6 @@ struct zmk_widget_screen {
     lv_obj_t *obj;
     lv_color_t cbuf[BUFFER_SIZE * BUFFER_SIZE];
     lv_color_t cbuf2[BUFFER_SIZE * BUFFER_SIZE];
-    lv_color_t cbuf3[BUFFER_SIZE * BUFFER_SIZE];
     struct status_state state;
 };
 
