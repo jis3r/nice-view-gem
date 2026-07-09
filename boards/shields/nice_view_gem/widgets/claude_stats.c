@@ -6,8 +6,8 @@
 
 #include <zmk/display.h>
 
-#include "../assets/custom_fonts.h"
 #include "claude_stats.h"
+#include "../assets/custom_fonts.h"
 #include "util.h"
 
 #define CLAUDE_STATS_BAR_HEIGHT 4
