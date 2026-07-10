@@ -68,8 +68,7 @@ static void draw_middle(const struct claude_stats_state *stats) {
     fill_background(middle_canvas);
 
     if (!stats->valid) {
-        draw_label(middle_canvas, 0, 0, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, "CLAUDE");
-        draw_label(middle_canvas, 0, 13, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, "SYNC");
+        draw_label(middle_canvas, 0, 0, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, "SYNC");
         rotate_canvas(middle_canvas, middle_buffer);
         return;
     }
@@ -79,28 +78,27 @@ static void draw_middle(const struct claude_stats_state *stats) {
     snprintk(session_text, sizeof(session_text), "%u%%", stats->session_remaining);
     snprintk(weekly_text, sizeof(weekly_text), "%u%%", stats->weekly_remaining);
 
-    draw_label(middle_canvas, 0, 0, 62, LV_TEXT_ALIGN_LEFT, "CLAUDE");
     if (stats_are_stale(stats)) {
         lv_draw_rect_dsc_t stale_dsc;
         init_rect_dsc(&stale_dsc, LVGL_FOREGROUND);
-        lv_canvas_draw_rect(middle_canvas, 65, 4, CLAUDE_STATS_STALE_MARKER_SIZE,
+        lv_canvas_draw_rect(middle_canvas, 32, 43, CLAUDE_STATS_STALE_MARKER_SIZE,
                             CLAUDE_STATS_STALE_MARKER_SIZE, &stale_dsc);
     }
 
-    draw_label(middle_canvas, 0, 13, 36, LV_TEXT_ALIGN_LEFT, "SESH");
-    draw_label(middle_canvas, 36, 13, 32, LV_TEXT_ALIGN_RIGHT, session_text);
-    draw_bar(middle_canvas, 27, stats->session_remaining);
+    draw_label(middle_canvas, 0, 0, 36, LV_TEXT_ALIGN_LEFT, "SESH");
+    draw_label(middle_canvas, 36, 0, 32, LV_TEXT_ALIGN_RIGHT, session_text);
+    draw_bar(middle_canvas, 14, stats->session_remaining);
 
-    draw_label(middle_canvas, 0, 32, 36, LV_TEXT_ALIGN_LEFT, "WEEK");
-    draw_label(middle_canvas, 36, 32, 32, LV_TEXT_ALIGN_RIGHT, weekly_text);
-    draw_bar(middle_canvas, 46, stats->weekly_remaining);
+    draw_label(middle_canvas, 0, 19, 36, LV_TEXT_ALIGN_LEFT, "WEEK");
+    draw_label(middle_canvas, 36, 19, 32, LV_TEXT_ALIGN_RIGHT, weekly_text);
+    draw_bar(middle_canvas, 33, stats->weekly_remaining);
 
     char reset_text[9];
     uint16_t hours = stats->reset_minutes / 60U;
     uint16_t minutes = stats->reset_minutes % 60U;
     snprintk(reset_text, sizeof(reset_text), "%u:%02u", hours, minutes);
-    draw_label(middle_canvas, 0, 52, 24, LV_TEXT_ALIGN_LEFT, "RST");
-    draw_label(middle_canvas, 24, 52, 44, LV_TEXT_ALIGN_RIGHT, reset_text);
+    draw_label(middle_canvas, 0, 39, 24, LV_TEXT_ALIGN_LEFT, "RST");
+    draw_label(middle_canvas, 24, 39, 44, LV_TEXT_ALIGN_RIGHT, reset_text);
 
     rotate_canvas(middle_canvas, middle_buffer);
 }
@@ -145,7 +143,6 @@ void claude_stats_init(lv_obj_t *parent, lv_color_t middle_cbuf[]) {
     middle_buffer = middle_cbuf;
 
     middle_canvas = lv_canvas_create(parent);
-    // Stats canvas x=48..115; 50% crystal x=2..36 leaves an 11px gap.
     lv_obj_align(middle_canvas, LV_ALIGN_TOP_RIGHT, BUFFER_OFFSET_MIDDLE, 0);
     lv_canvas_set_buffer(middle_canvas, middle_buffer, BUFFER_SIZE, BUFFER_SIZE,
                          LV_IMG_CF_TRUE_COLOR);
