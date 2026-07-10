@@ -25,7 +25,7 @@ void rotate_canvas(lv_obj_t *canvas, lv_color_t cbuf[]) {
     for (int16_t y = 0; y < BUFFER_SIZE; y++) {
         for (int16_t x = 0; x < BUFFER_SIZE; x++) {
             lv_color_t color = lv_img_buf_get_px_color(&img, x, y, LVGL_BACKGROUND);
-            lv_img_buf_set_px_color(dest, y, BUFFER_SIZE - 1 - x, color);
+            lv_img_buf_set_px_color(dest, BUFFER_SIZE - 1 - y, x, color);
         }
     }
 
