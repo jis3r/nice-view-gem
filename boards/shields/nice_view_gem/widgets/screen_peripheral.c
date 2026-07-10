@@ -1,10 +1,4 @@
 #include <zephyr/kernel.h>
-#if IS_ENABLED(CONFIG_NICE_VIEW_GEM_PREVIEW)
-#include <zephyr/sys/printk.h>
-#define PREVIEW_TRACE(stage) printk("nice-view preview: " stage "\n")
-#else
-#define PREVIEW_TRACE(stage)
-#endif
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -36,17 +30,13 @@ static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
     lv_obj_t *canvas = lv_obj_get_child(widget, 0);
     fill_background(canvas);
-    PREVIEW_TRACE("top background");
 
     // Draw widgets
     draw_output_status(canvas, state);
-    PREVIEW_TRACE("top output");
     draw_battery_status(canvas, state);
-    PREVIEW_TRACE("top battery");
 
     // Rotate for horizontal display
     rotate_canvas(canvas, cbuf);
-    PREVIEW_TRACE("top rotate");
 }
 
 /**
@@ -119,29 +109,21 @@ ZMK_SUBSCRIPTION(widget_peripheral_status, zmk_split_peripheral_status_changed);
 
 int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     widget->obj = lv_obj_create(parent);
-    PREVIEW_TRACE("screen object");
     lv_obj_set_size(widget->obj, SCREEN_HEIGHT, SCREEN_WIDTH);
 
     lv_obj_t *top = lv_canvas_create(widget->obj);
-    PREVIEW_TRACE("top canvas");
     lv_obj_align(top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_canvas_set_buffer(top, widget->cbuf, BUFFER_SIZE, BUFFER_SIZE, LV_IMG_CF_TRUE_COLOR);
-    PREVIEW_TRACE("top buffer");
 
 #if IS_ENABLED(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS)
     claude_stats_init(widget->obj, widget->cbuf2);
-    PREVIEW_TRACE("Claude stats");
 #endif
 
     draw_animation(widget->obj);
-    PREVIEW_TRACE("animation");
 
     sys_slist_append(&widgets, &widget->node);
-    PREVIEW_TRACE("widget list");
     widget_battery_status_init();
-    PREVIEW_TRACE("battery");
     widget_peripheral_status_init();
-    PREVIEW_TRACE("peripheral");
 
     return 0;
 }
