@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
@@ -74,6 +75,33 @@ static void draw_euro(lv_obj_t *canvas, int16_t x, int16_t y) {
     lv_canvas_draw_rect(canvas, x, y + 5, 5, 1, &glyph_dsc);
 }
 
+static const uint8_t tiny_glyphs[][5] = {
+    {0x7, 0x5, 0x5, 0x5, 0x7}, {0x2, 0x6, 0x2, 0x2, 0x7}, {0x7, 0x1, 0x7, 0x4, 0x7},
+    {0x7, 0x1, 0x7, 0x1, 0x7}, {0x5, 0x5, 0x7, 0x1, 0x1}, {0x7, 0x4, 0x7, 0x1, 0x7},
+    {0x7, 0x4, 0x7, 0x5, 0x7}, {0x7, 0x1, 0x1, 0x1, 0x1}, {0x7, 0x5, 0x7, 0x5, 0x7},
+    {0x7, 0x5, 0x7, 0x1, 0x7}, {0x0, 0x2, 0x7, 0x2, 0x0},
+};
+
+static void draw_tiny_glyph(lv_obj_t *canvas, int16_t x, int16_t y, char character) {
+    size_t glyph_index = character == '+' ? 10U : (size_t)(character - '0');
+    lv_draw_rect_dsc_t glyph_dsc;
+    init_rect_dsc(&glyph_dsc, LVGL_FOREGROUND);
+
+    for (uint8_t row = 0U; row < 5U; row++) {
+        for (uint8_t column = 0U; column < 3U; column++) {
+            if ((tiny_glyphs[glyph_index][row] & BIT(2U - column)) != 0U) {
+                lv_canvas_draw_rect(canvas, x + column, y + row, 1, 1, &glyph_dsc);
+            }
+        }
+    }
+}
+
+static void draw_tiny_text(lv_obj_t *canvas, int16_t x, int16_t y, const char *text) {
+    for (size_t index = 0U; text[index] != '\0'; index++) {
+        draw_tiny_glyph(canvas, x + (int16_t)(index * 4U), y, text[index]);
+    }
+}
+
 static const char *error_text(uint8_t error) {
     switch (error) {
     case CLAUDE_STATS_ERROR_AUTH:
@@ -112,8 +140,11 @@ static void draw_extra_value(const struct claude_stats_state *stats) {
     } else {
         snprintk(amount_text, sizeof(amount_text), "%u", stats->extra_remaining_euros);
     }
-    draw_euro(middle_canvas, 31, 40);
-    draw_label(middle_canvas, 37, 38, 31, LV_TEXT_ALIGN_RIGHT, amount_text);
+    size_t amount_length = strlen(amount_text);
+    int16_t amount_width = (int16_t)(amount_length * 4U - 1U);
+    int16_t amount_x = BUFFER_SIZE - amount_width;
+    draw_euro(middle_canvas, amount_x - 6, 40);
+    draw_tiny_text(middle_canvas, amount_x, 42, amount_text);
 }
 
 static void draw_footer(const struct claude_stats_state *stats, bool stale) {
@@ -165,7 +196,7 @@ static void draw_middle(const struct claude_stats_state *stats) {
     draw_label(middle_canvas, 36, 19, 32, LV_TEXT_ALIGN_RIGHT, weekly_text);
     draw_bar(middle_canvas, 33, stats->weekly_remaining);
 
-    draw_label(middle_canvas, 0, 38, 30, LV_TEXT_ALIGN_LEFT, "EXTRA");
+    draw_label(middle_canvas, 0, 38, 40, LV_TEXT_ALIGN_LEFT, "EXTRA");
     draw_extra_value(stats);
     draw_bar(middle_canvas, 52, stats->extra_remaining);
 
