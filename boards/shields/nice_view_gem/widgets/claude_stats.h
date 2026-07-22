@@ -7,4 +7,5 @@
 
 void claude_stats_init(lv_obj_t *parent, lv_color_t middle_cbuf[]);
 void claude_stats_update_from_relay(uint8_t session_remaining, uint8_t weekly_remaining,
-                                    uint16_t reset_minutes, bool central_stale);
+                                    uint16_t reset_minutes, uint8_t flags, uint8_t error,
+                                    uint8_t extra_remaining, uint16_t extra_remaining_euros);

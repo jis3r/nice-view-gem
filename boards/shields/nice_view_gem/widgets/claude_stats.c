@@ -12,14 +12,23 @@
 
 #define CLAUDE_STATS_BAR_HEIGHT 4
 #define CLAUDE_STATS_BAR_WIDTH 68
-#define CLAUDE_STATS_STALE_MARKER_SIZE 3
+#define CLAUDE_STATS_STALE_FLAG BIT(0)
+#define CLAUDE_STATS_SAMPLE_VALID_FLAG BIT(1)
+#define CLAUDE_STATS_EXTRA_ENABLED_FLAG BIT(2)
+#define CLAUDE_STATS_ERROR_NONE 0U
+#define CLAUDE_STATS_ERROR_AUTH 1U
+#define CLAUDE_STATS_ERROR_NETWORK 2U
+#define CLAUDE_STATS_ERROR_API 3U
 
 struct claude_stats_state {
     uint8_t session_remaining;
     uint8_t weekly_remaining;
     uint16_t reset_minutes;
-    bool central_stale;
-    bool valid;
+    uint8_t flags;
+    uint8_t error;
+    uint8_t extra_remaining;
+    uint16_t extra_remaining_euros;
+    bool has_report;
     int64_t received_at;
 };
 
@@ -29,8 +38,8 @@ static lv_color_t *middle_buffer;
 
 K_MUTEX_DEFINE(claude_stats_mutex);
 
-static void draw_label(lv_obj_t *canvas, int16_t x, int16_t y, int16_t width,
-                       lv_text_align_t align, const char *text) {
+static void draw_label(lv_obj_t *canvas, int16_t x, int16_t y, int16_t width, lv_text_align_t align,
+                       const char *text) {
     lv_draw_label_dsc_t label_dsc;
     init_label_dsc(&label_dsc, LVGL_FOREGROUND, &pixel_operator_mono, align);
     lv_canvas_draw_text(canvas, x, y, width, &label_dsc, text);
@@ -42,11 +51,10 @@ static void draw_bar(lv_obj_t *canvas, int16_t y, uint8_t percent) {
     border_dsc.bg_opa = LV_OPA_TRANSP;
     border_dsc.border_color = LVGL_FOREGROUND;
     border_dsc.border_width = 1;
-    lv_canvas_draw_rect(canvas, 0, y, CLAUDE_STATS_BAR_WIDTH, CLAUDE_STATS_BAR_HEIGHT,
-                        &border_dsc);
+    lv_canvas_draw_rect(canvas, 0, y, CLAUDE_STATS_BAR_WIDTH, CLAUDE_STATS_BAR_HEIGHT, &border_dsc);
 
     uint8_t fill_width = (uint8_t)(((CLAUDE_STATS_BAR_WIDTH - 2) * percent) / 100U);
-    if (fill_width == 0) {
+    if (fill_width == 0U) {
         return;
     }
 
@@ -55,8 +63,32 @@ static void draw_bar(lv_obj_t *canvas, int16_t y, uint8_t percent) {
     lv_canvas_draw_rect(canvas, 1, y + 1, fill_width, CLAUDE_STATS_BAR_HEIGHT - 2, &fill_dsc);
 }
 
+static void draw_euro(lv_obj_t *canvas, int16_t x, int16_t y) {
+    lv_draw_rect_dsc_t glyph_dsc;
+    init_rect_dsc(&glyph_dsc, LVGL_FOREGROUND);
+
+    lv_canvas_draw_rect(canvas, x + 1, y + 1, 1, 7, &glyph_dsc);
+    lv_canvas_draw_rect(canvas, x + 2, y, 3, 1, &glyph_dsc);
+    lv_canvas_draw_rect(canvas, x + 2, y + 8, 3, 1, &glyph_dsc);
+    lv_canvas_draw_rect(canvas, x, y + 3, 5, 1, &glyph_dsc);
+    lv_canvas_draw_rect(canvas, x, y + 5, 5, 1, &glyph_dsc);
+}
+
+static const char *error_text(uint8_t error) {
+    switch (error) {
+    case CLAUDE_STATS_ERROR_AUTH:
+        return "ERR AUTH";
+    case CLAUDE_STATS_ERROR_NETWORK:
+        return "ERR NET";
+    case CLAUDE_STATS_ERROR_API:
+        return "ERR API";
+    default:
+        return NULL;
+    }
+}
+
 static bool stats_are_stale(const struct claude_stats_state *stats) {
-    if (!stats->valid || stats->central_stale) {
+    if ((stats->flags & CLAUDE_STATS_STALE_FLAG) != 0U) {
         return true;
     }
 
@@ -64,11 +96,58 @@ static bool stats_are_stale(const struct claude_stats_state *stats) {
            (int64_t)CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_STALE_TIMEOUT_S * 1000LL;
 }
 
+static void draw_centered_status(const char *text) {
+    draw_label(middle_canvas, 0, 24, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, text);
+}
+
+static void draw_extra_value(const struct claude_stats_state *stats) {
+    if ((stats->flags & CLAUDE_STATS_EXTRA_ENABLED_FLAG) == 0U) {
+        draw_label(middle_canvas, 30, 38, 38, LV_TEXT_ALIGN_RIGHT, "OFF");
+        return;
+    }
+
+    char amount_text[6];
+    if (stats->extra_remaining_euros > 9999U) {
+        snprintk(amount_text, sizeof(amount_text), "9999+");
+    } else {
+        snprintk(amount_text, sizeof(amount_text), "%u", stats->extra_remaining_euros);
+    }
+    draw_euro(middle_canvas, 31, 40);
+    draw_label(middle_canvas, 37, 38, 31, LV_TEXT_ALIGN_RIGHT, amount_text);
+}
+
+static void draw_footer(const struct claude_stats_state *stats, bool stale) {
+    if (stale) {
+        draw_label(middle_canvas, 0, 57, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, "ERR HOST");
+        return;
+    }
+
+    const char *explicit_error = error_text(stats->error);
+    if (explicit_error != NULL) {
+        draw_label(middle_canvas, 0, 57, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, explicit_error);
+        return;
+    }
+
+    char reset_text[9];
+    uint16_t hours = stats->reset_minutes / 60U;
+    uint16_t minutes = stats->reset_minutes % 60U;
+    snprintk(reset_text, sizeof(reset_text), "%u:%02u", hours, minutes);
+    draw_label(middle_canvas, 0, 57, 24, LV_TEXT_ALIGN_LEFT, "RST");
+    draw_label(middle_canvas, 24, 57, 44, LV_TEXT_ALIGN_RIGHT, reset_text);
+}
+
 static void draw_middle(const struct claude_stats_state *stats) {
     fill_background(middle_canvas);
+    bool stale = stats_are_stale(stats);
 
-    if (!stats->valid) {
-        draw_label(middle_canvas, 0, 0, BUFFER_SIZE, LV_TEXT_ALIGN_CENTER, "SYNC");
+    if (!stats->has_report) {
+        draw_centered_status(stale ? "ERR HOST" : "SYNC");
+        rotate_canvas(middle_canvas, middle_buffer);
+        return;
+    }
+
+    if ((stats->flags & CLAUDE_STATS_SAMPLE_VALID_FLAG) == 0U) {
+        draw_centered_status(stale ? "ERR HOST" : error_text(stats->error));
         rotate_canvas(middle_canvas, middle_buffer);
         return;
     }
@@ -78,13 +157,6 @@ static void draw_middle(const struct claude_stats_state *stats) {
     snprintk(session_text, sizeof(session_text), "%u%%", stats->session_remaining);
     snprintk(weekly_text, sizeof(weekly_text), "%u%%", stats->weekly_remaining);
 
-    if (stats_are_stale(stats)) {
-        lv_draw_rect_dsc_t stale_dsc;
-        init_rect_dsc(&stale_dsc, LVGL_FOREGROUND);
-        lv_canvas_draw_rect(middle_canvas, 32, 43, CLAUDE_STATS_STALE_MARKER_SIZE,
-                            CLAUDE_STATS_STALE_MARKER_SIZE, &stale_dsc);
-    }
-
     draw_label(middle_canvas, 0, 0, 36, LV_TEXT_ALIGN_LEFT, "SESH");
     draw_label(middle_canvas, 36, 0, 32, LV_TEXT_ALIGN_RIGHT, session_text);
     draw_bar(middle_canvas, 14, stats->session_remaining);
@@ -93,13 +165,11 @@ static void draw_middle(const struct claude_stats_state *stats) {
     draw_label(middle_canvas, 36, 19, 32, LV_TEXT_ALIGN_RIGHT, weekly_text);
     draw_bar(middle_canvas, 33, stats->weekly_remaining);
 
-    char reset_text[9];
-    uint16_t hours = stats->reset_minutes / 60U;
-    uint16_t minutes = stats->reset_minutes % 60U;
-    snprintk(reset_text, sizeof(reset_text), "%u:%02u", hours, minutes);
-    draw_label(middle_canvas, 0, 39, 24, LV_TEXT_ALIGN_LEFT, "RST");
-    draw_label(middle_canvas, 24, 39, 44, LV_TEXT_ALIGN_RIGHT, reset_text);
+    draw_label(middle_canvas, 0, 38, 30, LV_TEXT_ALIGN_LEFT, "EXTRA");
+    draw_extra_value(stats);
+    draw_bar(middle_canvas, 52, stats->extra_remaining);
 
+    draw_footer(stats, stale);
     rotate_canvas(middle_canvas, middle_buffer);
 }
 
@@ -135,12 +205,15 @@ K_WORK_DELAYABLE_DEFINE(stale_check_work, stale_check_handler);
 static void stale_check_handler(struct k_work *work) {
     ARG_UNUSED(work);
     queue_redraw();
-    k_work_reschedule(&stale_check_work,
-                      K_SECONDS(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S));
+    k_work_reschedule(&stale_check_work, K_SECONDS(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S));
 }
 
 void claude_stats_init(lv_obj_t *parent, lv_color_t middle_cbuf[]) {
     middle_buffer = middle_cbuf;
+
+    k_mutex_lock(&claude_stats_mutex, K_FOREVER);
+    state.received_at = k_uptime_get();
+    k_mutex_unlock(&claude_stats_mutex);
 
     middle_canvas = lv_canvas_create(parent);
     lv_obj_align(middle_canvas, LV_ALIGN_TOP_RIGHT, BUFFER_OFFSET_MIDDLE, 0);
@@ -148,18 +221,21 @@ void claude_stats_init(lv_obj_t *parent, lv_color_t middle_cbuf[]) {
                          LV_IMG_CF_TRUE_COLOR);
 
     redraw();
-    k_work_reschedule(&stale_check_work,
-                      K_SECONDS(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S));
+    k_work_reschedule(&stale_check_work, K_SECONDS(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS_HEARTBEAT_S));
 }
 
 void claude_stats_update_from_relay(uint8_t session_remaining, uint8_t weekly_remaining,
-                                    uint16_t reset_minutes, bool central_stale) {
+                                    uint16_t reset_minutes, uint8_t flags, uint8_t error,
+                                    uint8_t extra_remaining, uint16_t extra_remaining_euros) {
     k_mutex_lock(&claude_stats_mutex, K_FOREVER);
     state.session_remaining = session_remaining;
     state.weekly_remaining = weekly_remaining;
     state.reset_minutes = reset_minutes;
-    state.central_stale = central_stale;
-    state.valid = true;
+    state.flags = flags;
+    state.error = error;
+    state.extra_remaining = extra_remaining;
+    state.extra_remaining_euros = extra_remaining_euros;
+    state.has_report = true;
     state.received_at = k_uptime_get();
     k_mutex_unlock(&claude_stats_mutex);
 

@@ -32,7 +32,7 @@ static void preview_update_handler(struct k_work *work) {
         return;
     }
 
-    claude_stats_update_from_relay(62, 87, 102, false);
+    claude_stats_update_from_relay(62, 87, 102, BIT(1) | BIT(2), 0, 40, 400);
     raise_zmk_battery_state_changed((struct zmk_battery_state_changed){.state_of_charge = 95});
     raise_zmk_split_peripheral_status_changed(
         (struct zmk_split_peripheral_status_changed){.connected = true});

@@ -13,7 +13,9 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/display.h>
 #include <zmk/usb.h>
 
+#if !IS_ENABLED(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS)
 #include "animation.h"
+#endif
 #include "battery.h"
 #if IS_ENABLED(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS)
 #include "claude_stats.h"
@@ -119,7 +121,9 @@ int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     claude_stats_init(widget->obj, widget->cbuf2);
 #endif
 
+#if !IS_ENABLED(CONFIG_NICE_VIEW_GEM_CLAUDE_STATS)
     draw_animation(widget->obj);
+#endif
 
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();
